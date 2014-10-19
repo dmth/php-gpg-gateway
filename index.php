@@ -53,15 +53,22 @@ error_reporting(E_ALL | E_STRICT);
             //$gwresp = $gw->startClient(); //this is a httpful-response see http://phphttpclient.com/docs/namespace-Httpful.Response.html
             $encodedquery = $gw->startGW();
             $request = $gw->decode($encodedquery[$config['httppostparametername']]);
-                       
+            
             $response = $gw->connect($calledEndpoint['service.url'], $request);
-            //return the headers which were retrieved from the http-client.
-            foreach($response->headers->toArray() as $key => $value){
-                header($key.":".$value);
-            }
+            
+            // Response Object is a Httpful\Response Object which consists of body, raw_body and headers and raw_headers
+            // also the original rquest is accessible within the response object.
+            // we are interested in raw_headers and raw_body to create a response object.          
+            $responsearray = [
+                'headers'   => $response->_parseHeaders($response->raw_headers),
+                'body'      => $response->raw_body
+                ];
+            
+            //encode array and headers.
+            $responseencoded = $gw->encode($responsearray);
 
-            //repond to the request
-            echo($response);
+            //now send the encoded data to the client
+            $gw->send($responseencoded);
             
         }elseif(strcasecmp($calledEndpoint['endpoint.role'], $config['allowedendpointroles']['app']) == 0){
             //echo "Success for ".$calledEndpoint['endpoint.url'].": Role found: ".$config['allowedendpointroles']['app'];
@@ -72,14 +79,23 @@ error_reporting(E_ALL | E_STRICT);
             $gw->setEndpointConfig($calledEndpoint);
             $query = $gw->startGW();
             
+            //connect to the respective service-endpoint of this gateway
             $response = $gw->connect(array($config['httppostparametername'] => $gw->encode($query)));
             
+            // Response Object is a Httpful\Response Object which consists of body, raw_body and headers and raw_headers
+            // also the original request is accessible within the response object.
+            // we are interested in raw_headers and raw_body to create a response object.       
+            
+            $responsearray = $gw->decode($response);
+            
             //return the headers which were retrieved from the http-client.
-            foreach($response->headers->toArray() as $key => $value){
-               header($key.":".$value);
+            foreach($responsearray['headers'] as $key => $value){
+              header($key.":".$value);
             }
             
-            echo $response;
+
+            //now send the received data to the client
+            $gw->send($responsearray['body']);
             
         }else{
             echo "ERROR: The endpoint ".$calledEndpoint['endpoint.url']." is misconfigured.\n The configured role ".$calledEndpoint['endpoint.role']." is unknown.";

@@ -60,5 +60,4 @@ class servicegateway extends gateway{
         }
         return $response;
     }
-    
 }

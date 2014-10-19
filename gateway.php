@@ -56,4 +56,8 @@ class gateway {
         $decoded = base64_decode($serializedb64query);
         return unserialize($decoded);
     }
+    
+    public function send($data){
+        echo $data;
+    }
 }
