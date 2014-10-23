@@ -27,6 +27,7 @@ error_reporting(E_ALL | E_STRICT);
     require_once('httpinputsilo.php');
     require_once('servicegateway.php');
     require_once('applicationgateway.php');
+    require_once('gpghelper.php');
 
 
     $config=include('config.conf.php');
@@ -38,13 +39,17 @@ error_reporting(E_ALL | E_STRICT);
     $calledEndpoint = get_endpoint_config($config['endpointsconfig'], $invokedendpoint);
    
     if (!is_array($calledEndpoint)){
+        //ToDo Throw 404 or similar valid exception!
         echo "ERROR: The provided enpoint was not yet configured.";
     }else{
         //A config for the endpoint was found,
         //Determine the role of the enpoint.
         //This can be either 'service' or 'application', as defined in $config
         if(strcasecmp($calledEndpoint['endpoint.role'], $config['allowedendpointroles']['ser']) == 0){
-            //echo "Success for ".$calledEndpoint['endpoint.url'].": Role found: ".$config['allowedendpointroles']['ser'];
+            /*
+             * Service - Gateway
+             * ToDo: encapsulate this code into a function or similar. 
+             */
             $silo = new httpinputsilo(); //retrieve http-input   
             $silo->retrieveRequest();
             $gw = new servicegateway(); //create a new gateway
@@ -64,6 +69,13 @@ error_reporting(E_ALL | E_STRICT);
                 'body'      => $response->raw_body
                 ];
             
+            // ToDo: Replace Server-URL with applicationgateway-url in Response
+            //  If: 'service.MITM.urlReplacement' => TRUE
+            //  Then: Replace all original-server-address-URLs with the URL of the application gateway.
+            //  
+            // ToDo: Application-Gateway needs to send its URL with the request.
+            // ToDo: Recalculate Content-Length-Header after Replacement
+
             //encode array and headers.
             $responseencoded = $gw->encode($responsearray);
 
@@ -71,7 +83,16 @@ error_reporting(E_ALL | E_STRICT);
             $gw->send($responseencoded);
             
         }elseif(strcasecmp($calledEndpoint['endpoint.role'], $config['allowedendpointroles']['app']) == 0){
-            //echo "Success for ".$calledEndpoint['endpoint.url'].": Role found: ".$config['allowedendpointroles']['app'];
+            /*
+             * Application - Gateway
+             * ToDo: encapsulate this code into a function or similar. 
+             */
+            
+            $gpg = new gpgphelper();
+            $gpg->init();
+            
+            
+            
             $silo = new httpinputsilo();
             $silo->retrieveRequest();
             $gw = new applicationgateway(); //create a new gateway
@@ -92,12 +113,12 @@ error_reporting(E_ALL | E_STRICT);
             foreach($responsearray['headers'] as $key => $value){
               header($key.":".$value);
             }
-            
 
             //now send the received data to the client
             $gw->send($responsearray['body']);
             
         }else{
+            //ToDo throw 50x or similar valid exception
             echo "ERROR: The endpoint ".$calledEndpoint['endpoint.url']." is misconfigured.\n The configured role ".$calledEndpoint['endpoint.role']." is unknown.";
         }
                 

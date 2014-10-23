@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 require_once('httpinputsilo.php');
-include_once('./lib/httpful/bootstrap.php');
+include_once('./lib/httpful/bootstrap.php'); //httpful library
 /**
  * Description of gateway
  *
@@ -35,7 +35,7 @@ class gateway {
     protected $httpinputsilo;
     protected $endpointconfig;
     
-    public function setSilo($silo){
+    public function setSilo(httpinputsilo $silo){
         $this->httpinputsilo = $silo;
     }
     
