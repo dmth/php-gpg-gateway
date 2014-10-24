@@ -103,7 +103,7 @@ class gpgphelper {
     }
 
     function checkdetachedsigned($data, $detached){
-       $verify = $this->gpg->verify($data, $detached);
+       $verify = $this->verify($data, $detached);
        $valid = 0;
         foreach ($verify as $signatureobject){
             syslog(LOG_INFO, 'gpgphelper ('.$this->endpoint['endpoint.url'].'): Data was signed by: '.$signatureobject->getUserId().
@@ -115,6 +115,10 @@ class gpgphelper {
             }
         }
         return $valid; 
+    }
+    
+    function verify($data, $detached){
+        return $this->gpg->verify($data, $detached);
     }
     
     function checkclearsigned($clearsigned){

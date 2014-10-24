@@ -30,11 +30,12 @@ require_once('gateway.php');
  * @author Dustin Demuth <mail@dmth.eu>
  */
 class servicegateway extends gateway{
-    function startGW(){
-        //echo "ServiceGW Start Submitted by Post: ";
-        //print_r($this->httpinputsilo->returnPost());
-        //echo "\n";
-        return $this->httpinputsilo->returnPost();
+    
+    function __construct(httpinputsilo $silo, $config) {
+       parent::__construct($silo, $config);
+    }
+    function __destruct() {
+        parent::__destruct();
     }
     
     function connect($serviceurl, $query){

@@ -38,6 +38,7 @@ return
                 'application.serviceendpoint.url' => 'http://127.0.0.1/service', //The Url of the counterpart of this application
                 'application.require.receipt' => '',
                 'postbox.address' => '',
+                'application.pgp.accepted.keys' => ["42129EE0100273DAFCD8A5A76F4BE4C779469199"]
             ],
             [   //Service Endpoint
                 'endpoint.url' => '/service',
@@ -80,5 +81,6 @@ return
                 'application.serviceendpoint.url' => 'http://127.0.0.1/wps', //The Url of the counterpart of this application
                 'application.require.receipt' => '',
                 'postbox.address' => '',
+                'application.pgp.accepted.keys' => ["42129EE0100273DAFCD8A5A76F4BE4C779469199"]
             ]
 ];

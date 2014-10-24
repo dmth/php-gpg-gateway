@@ -25,7 +25,7 @@
  */
 
 /**
- * Description of httpinputsilo
+ * When called this class retrieves all HTTP HEADERS, GET and POST parameters
  *
  * @author Dustin Demuth <mail@dmth.eu>
  */
@@ -33,12 +33,14 @@ class httpinputsilo {
 
     //put your code here
 
-    private $getrequest;
-    private $postrequest;
-    private $headers;
+    private $getrequest; //The data which was transmitted as HTTP Get to the Service
+    private $postrequest; //The data which was transmitted as HTTP Post to the Service
+    private $headers; //The Headers which have been transmitted to the Service
 
-    //private $body;
-
+   function __construct() {
+       $this->retrieveRequest();
+   }
+    
     function retrieveRequest() {
         // see http://php.net/manual/en/function.getallheaders.php
         if (!function_exists('getallheaders')) {
@@ -54,22 +56,15 @@ class httpinputsilo {
             }
 
         }
-        //https://stackoverflow.com/questions/8945879/how-to-get-body-of-a-post-in-php
-//        function getRequestBody() {
-//            $rawInput = fopen('php://input', 'r');
-//            $tempStream = fopen('php://temp', 'r+');
-//            stream_copy_to_stream($rawInput, $tempStream);
-//            rewind($tempStream);
-//            return $tempStream;
-//        }
 
         $config = include('config.conf.php');
         $this->getrequest = filter_input_array(INPUT_GET);
         $this->postrequest = filter_input_array(INPUT_POST);
         $this->headers = getallheaders();
-        //$this->body          = getRequestBody();        
-        //
-           //sanitize the arrays, as the endpoint is still stored in it.
+        
+        //sanitize the arrays, as the endpoint which was called might still be stored in it.
+        //this is necessary as http://myurl/service was parsed to http://myurl/?endpoint=service
+        //we don't want this information in our GET array.
         unset($this->getrequest[$config['httpgetparametername']]);
         unset($config);
     }
@@ -78,25 +73,9 @@ class httpinputsilo {
         return $this->getrequest;
     }
 
-    function returnGetAsStringUrlEncoded() {
-        $r = "";
-        foreach ($this->getrequest as $key => $value) {
-            $r .= urlencode($key) . "=" . urlencode($value);
-
-            if (!($value === end($this->getrequest))) {
-                $r .= "&";
-            }
-        }
-        return $r;
-    }
-
     function returnPost() {
         return $this->postrequest;
     }
-
-    //function returnBody(){
-    //    return $this->body;
-    //}
 
     function returnHeaders() {
         return $this->headers;

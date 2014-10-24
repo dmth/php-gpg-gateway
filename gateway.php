@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 require_once('httpinputsilo.php');
-require 'vendor/autoload.php';
+require 'vendor/autoload.php'; //composer
 
 /**
  * Description of gateway
@@ -36,6 +36,16 @@ class gateway {
     protected $httpinputsilo;
     protected $endpointconfig;
 
+    function __construct(httpinputsilo $silo, $config){
+        $this->setSilo($silo);
+        $this->setEndpointConfig($config);
+        syslog(LOG_DEBUG, 'New '. $this->endpointconfig['endpoint.role']. ' Gateway: '. $this->endpointconfig['endpoint.url']);
+    }
+    
+    function __destruct() {
+        syslog(LOG_DEBUG, $this->endpointconfig['endpoint.role']. ' Gateway '. $this->endpointconfig['endpoint.url'] . ' was destroyed');
+    }
+    
     public function setSilo(httpinputsilo $silo) {
         $this->httpinputsilo = $silo;
     }
@@ -44,8 +54,19 @@ class gateway {
         $this->endpointconfig = $config;
     }
 
-    public function startGW() {
-        return NULL;
+    //Read the Values from HTTP-Silo and retrun as an array.
+    function startGW(){
+        $headers = $this->httpinputsilo->returnHeaders();
+        $getvalue = $this->httpinputsilo->returnGet();
+        $postvalues = $this->httpinputsilo->returnPost();
+        
+        $query = [
+            'headers'  => $headers,
+            'get'   => $getvalue,
+            'post'  => $postvalues
+        ];
+        
+        return $query;
     }
 
     public function encode($queryarray) {

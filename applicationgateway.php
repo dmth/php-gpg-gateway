@@ -31,23 +31,13 @@ require_once('gateway.php');
  */
 class applicationgateway extends gateway{
     
-    //Read the Values from HTTP Input
-    function startGW(){
-        $headers = $this->httpinputsilo->returnHeaders();
-        $getvalue = $this->httpinputsilo->returnGet();
-        $postvalues = $this->httpinputsilo->returnPost();
-        
-        $query = [
-            'headers'  => $headers,
-            'get'   => $getvalue,
-            'post'  => $postvalues
-        ];
-        //echo "ApplicationGW Start Building query: ";
-        //print_r($query);
-        //echo "\n";
-        return $query;
+    function __construct(httpinputsilo $silo, $config) {
+       parent::__construct($silo, $config);
     }
-    
+    function __destruct() {
+        parent::__destruct();
+    }
+       
     //Connect to a servicegateway and send an encoded query
     function connect($encodedquery){
         $url = $this->endpointconfig['application.serviceendpoint.url'];

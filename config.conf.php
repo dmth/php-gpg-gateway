@@ -38,7 +38,7 @@ return [
      */
     'gpgbinpath' => '/usr/bin/gpg',
     'httpgetparametername' => 'endpoint',
-    'httppostparametername' => 'content',
+    'contentname' => 'content',
     'signaturename' => 'signature',
     'publickeyname' => 'pubkey',
     /*
