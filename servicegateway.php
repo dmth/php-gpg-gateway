@@ -38,10 +38,12 @@ class servicegateway extends gateway{
         parent::__destruct();
     }
     
-    function connect($serviceurl, $query){
+    function connect($query){
         $header = $query['headers'];
         $get    = $query['get'];
         $post   = $query['post'];
+        
+        $serviceurl = $this->endpointconfig['endpoint.service.connecturl'];
         
         $get_r = "";
         foreach ( $get as $key => $value){

@@ -40,7 +40,7 @@ class applicationgateway extends gateway{
        
     //Connect to a servicegateway and send an encoded query
     function connect($encodedquery){
-        $url = $this->endpointconfig['application.serviceendpoint.url'];
+        $url = $this->endpointconfig['endpoint.service.connecturl'];
         
         //echo "ApplicationGW Connect Connect to URL: ".$url."\n";
         //echo "ApplicationGW Connect Sending: content=".$encodedquery['content']."\n";

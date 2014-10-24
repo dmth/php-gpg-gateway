@@ -38,10 +38,10 @@ class transportcapsule {
 
     //put your code here
     private $capsule = [
-        'content'   => '',
+        'content' => '',
         'publickey' => '',
         'signature' => '',
-        'flags'     => array()
+        'flags' => array()
     ];
 
     function setContent($content) {
@@ -55,15 +55,15 @@ class transportcapsule {
     function setSignature($signature) {
         $this->capsule['signature'] = $signature;
     }
-    
-    function setFlag($flag){
+
+    function setFlag($flag) {
         array_push($this->capsule['flags'], $flag);
     }
 
-    function setFlags(array $flags){
+    function setFlags($flags) {
         $this->capsule['flags'] = $flags;
     }
-    
+
     function getContent() {
         return $this->capsule['content'];
     }
@@ -75,39 +75,51 @@ class transportcapsule {
     function getSignature() {
         return $this->capsule['signature'];
     }
-    
-    function getFlags(){
+
+    function getFlags() {
         return $this->capsule['flags'];
     }
-    
-    function getFlagsString(){
-        $str = '';
-        
-        foreach ($this->capsule['flags'] as $flag){
-            $str .= $flag;
-            if (!($flag === end($this->capsule['flags']))){
-                $str .= ',';           
+
+    function getFlagsString() {
+
+        if (!is_array($this->capsule['flags'])) {
+            return $this->capsule['flags'];
+        } else {
+            $str = '';
+            foreach ($this->capsule['flags'] as $flag) {
+                $str .= $flag;
+                if (!($flag === end($this->capsule['flags']))) {
+                    $str .= ',';
+                }
             }
+            return $str;
         }
-        return $str;
     }
-    
-    function getCapsule(){
+
+    function getCapsule() {
         return $this->capsule;
     }
-    
-    function setCapsule(array $c){
-        $this->setContent($c['content']);
-        $this->setSignature($c['signature']);
-        $this->setPublickey($c['publickey']);
-        $this->setFlags($c['flags']);
+
+    function setCapsule(array $c) {
+        if (array_key_exists('content', $c)) {
+            $this->setContent($c['content']);
+        };
+        if (array_key_exists('signature', $c)) {
+            $this->setSignature($c['signature']);
+        }
+        if (array_key_exists('publickey', $c)) {
+            $this->setPublickey($c['publickey']);
+        }
+        if (array_key_exists('flags', $c)) {
+            $this->setFlags($c['flags']);
+        }
     }
-    
-    function serialise(){
+
+    function serialise() {
         return serialize($this->capsule);
     }
-    
-    function deserialise($str){
+
+    function deserialise($str) {
         $this->setCapsule(unserialize($str));
     }
 

@@ -83,17 +83,17 @@ class gpgphelper {
 
         if (!is_string($pgpkeyid)) {
             //ToDo Throw an Exeception
-            error_log('gpgphelper: The KeyID for the gpg-key is not configured');
+            error_log('gpgphelper: (sign) The KeyID for the gpg-key is not configured');
             exit(1); //Fail.
         }
 
         if (!is_string($pgppassphrase)) {
             //ToDo Throw an Exeception
-            error_log('gpgphelper: No password provided for this gpg-key');
+            error_log('gpgphelper: (sign) No password provided for this gpg-key');
             exit(1); //Fail.
         }
 
-        syslog(LOG_INFO, 'gpgphelper: keyid: ' . $pgpkeyid);
+        syslog(LOG_INFO, 'gpgphelper: (sign) keyid: ' . $pgpkeyid);
         // ToDo handling the passphrase appears to be buggy. crypt_gpg reports that no passphrase was provided.
         // ugly circumvention is to use NO passprase.
         
@@ -101,7 +101,41 @@ class gpgphelper {
         $detachedsig = $this->gpg->sign($data, Crypt_GPG::SIGN_MODE_DETACHED);
         return $detachedsig;
     }
+    
+    function encrypt($data, $publickeyidofreceiver) {
+        
+        if (!is_string($publickeyidofreceiver)) {
+            //ToDo Throw an Exeception
+            error_log('gpgphelper: (encrypt) The Public Key of the Receiver is unknown');
+            exit(1); //Fail.
+        }
 
+        syslog(LOG_INFO, 'gpgphelper: (encrypt) Public Key of Receiver: ' . $publickeyidofreceiver);
+        $this->gpg->addEncryptkey($publickeyidofreceiver);
+        
+        return $this->gpg->encrypt($data, false);
+    }
+
+    function decrypt($data){
+        $pgpkeyid = $this->endpoint['pgp.keyid'];
+        $pgppassphrase = $this->getpasswd();
+        
+        if (!is_string($pgpkeyid)) {
+            //ToDo Throw an Exeception
+            error_log('gpgphelper: (decrypt) The KeyID for the gpg-key is not configured');
+            exit(1); //Fail.
+        }
+
+        if (!is_string($pgppassphrase)) {
+            //ToDo Throw an Exeception
+            error_log('gpgphelper: (decrypt) No password provided for this gpg-key');
+            exit(1); //Fail.
+        }
+        
+        $this->gpg->addDecryptkey($pgpkeyid, $pgppassphrase);
+        return $this->gpg->decrypt($data);       
+    }
+    
     function checkdetachedsigned($data, $detached){
        $verify = $this->verify($data, $detached);
        $valid = 0;
