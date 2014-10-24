@@ -24,40 +24,42 @@
  * THE SOFTWARE.
  */
 require_once('httpinputsilo.php');
-include_once('./lib/httpful/bootstrap.php'); //httpful library
+require 'vendor/autoload.php';
+
 /**
  * Description of gateway
  *
  * @author Dustin Demuth <mail@dmth.eu>
  */
 class gateway {
-    
+
     protected $httpinputsilo;
     protected $endpointconfig;
-    
-    public function setSilo(httpinputsilo $silo){
+
+    public function setSilo(httpinputsilo $silo) {
         $this->httpinputsilo = $silo;
     }
-    
-    public function setEndpointConfig($config){
+
+    public function setEndpointConfig($config) {
         $this->endpointconfig = $config;
     }
-    
-    public function startGW(){
+
+    public function startGW() {
         return NULL;
     }
-    
-    public function encode($queryarray){
+
+    public function encode($queryarray) {
         $encoded = base64_encode(serialize($queryarray));
         return $encoded;
     }
-    
-    public function decode($serializedb64query){
+
+    public function decode($serializedb64query) {
         $decoded = base64_decode($serializedb64query);
         return unserialize($decoded);
     }
-    
-    public function send($data){
+
+    public function send($data) {
         echo $data;
     }
+
 }

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * The MIT License
  *
@@ -29,25 +30,29 @@
  * @author Dustin Demuth <mail@dmth.eu>
  */
 class httpinputsilo {
+
     //put your code here
 
     private $getrequest;
     private $postrequest;
     private $headers;
+
     //private $body;
 
-    function retrieveRequest(){
+    function retrieveRequest() {
         // see http://php.net/manual/en/function.getallheaders.php
-        if (!function_exists('getallheaders')){
-            function getallheaders(){
+        if (!function_exists('getallheaders')) {
+
+            function getallheaders() {
                 $headers = '';
-                foreach ($_SERVER as $name => $value){
-                    if (substr($name, 0, 5) == 'HTTP_'){
+                foreach ($_SERVER as $name => $value) {
+                    if (substr($name, 0, 5) == 'HTTP_') {
                         $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
                     }
                 }
                 return $headers;
             }
+
         }
         //https://stackoverflow.com/questions/8945879/how-to-get-body-of-a-post-in-php
 //        function getRequestBody() {
@@ -57,44 +62,44 @@ class httpinputsilo {
 //            rewind($tempStream);
 //            return $tempStream;
 //        }
-                
-           $config=include('config.conf.php');
-           $this->getrequest    = filter_input_array(INPUT_GET);
-           $this->postrequest   = filter_input_array(INPUT_POST);
-           $this->headers       = getallheaders();
-           //$this->body          = getRequestBody();        
-                      
-           //
+
+        $config = include('config.conf.php');
+        $this->getrequest = filter_input_array(INPUT_GET);
+        $this->postrequest = filter_input_array(INPUT_POST);
+        $this->headers = getallheaders();
+        //$this->body          = getRequestBody();        
+        //
            //sanitize the arrays, as the endpoint is still stored in it.
-           unset($this->getrequest[$config['httpgetparametername']]);
-           unset($config);
+        unset($this->getrequest[$config['httpgetparametername']]);
+        unset($config);
     }
-    
-    function returnGet(){
+
+    function returnGet() {
         return $this->getrequest;
     }
-    
-    function returnGetAsStringUrlEncoded(){
-        $r = "";
-        foreach ( $this->getrequest as $key => $value){
-            $r .= urlencode($key)."=".urlencode($value);
 
-            if (!($value === end($this->getrequest))){
-                $r .= "&";            
+    function returnGetAsStringUrlEncoded() {
+        $r = "";
+        foreach ($this->getrequest as $key => $value) {
+            $r .= urlencode($key) . "=" . urlencode($value);
+
+            if (!($value === end($this->getrequest))) {
+                $r .= "&";
             }
         }
         return $r;
     }
-    
-    function returnPost(){
+
+    function returnPost() {
         return $this->postrequest;
     }
-        
+
     //function returnBody(){
     //    return $this->body;
     //}
-    
-    function returnHeaders(){
+
+    function returnHeaders() {
         return $this->headers;
     }
+
 }

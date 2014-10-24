@@ -1,5 +1,6 @@
 <?php
-/* 
+
+/*
  * The MIT License
  *
  * Copyright 2014 Dustin Demuth <mail@dmth.eu>.
@@ -23,29 +24,32 @@
  * THE SOFTWARE.
  */
 
-return [ 
-/* $httpgetparametername
- * the name of the parameter which defines the enpoint. 
- * The webserver has to define this,
- * i.e. in nginx by 
- * 
-    location / {
-        root   /srv/http;
-        rewrite  ^(/.*)$ /index.php?endpoint=$1 last;
-        index  index.php;
-    }
- */
-'httpgetparametername' => 'endpoint',
-'httppostparametername' => 'content',
- /*
-  * Where are the enpoints configured?
-  */
-'endpointsconfig' => include('endpoints.conf.php'),
- /*
-  * Two roles are allowed as endpoints:
-  */
-'allowedendpointroles' => [
-    'ser' => 'service',
-    'app' => 'application'
+return [
+    /* $httpgetparametername
+     * the name of the parameter which defines the enpoint. 
+     * The webserver has to define this,
+     * i.e. in nginx by 
+     * 
+      location / {
+      root   /srv/http;
+      rewrite  ^(/.*)$ /index.php?endpoint=$1 last;
+      index  index.php;
+      }
+     */
+    'gpgbinpath' => '/usr/bin/gpg',
+    'httpgetparametername' => 'endpoint',
+    'httppostparametername' => 'content',
+    'signaturename' => 'signature',
+    'publickeyname' => 'pubkey',
+    /*
+     * Where are the enpoints configured?
+     */
+    'endpointsconfig' => include('endpoints.conf.php'),
+    /*
+     * Two roles are allowed as endpoints:
+     */
+    'allowedendpointroles' => [
+        'ser' => 'service',
+        'app' => 'application'
     ]
 ];
