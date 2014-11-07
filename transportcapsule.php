@@ -41,7 +41,8 @@ class transportcapsule {
         'content' => '',
         'publickey' => '',
         'signature' => '',
-        'flags' => array()
+        'flags' => array(),
+        'deliveryreceipt' => '' //This field will only be used in Responses.
     ];
 
     function setContent($content) {
@@ -64,6 +65,9 @@ class transportcapsule {
         $this->capsule['flags'] = $flags;
     }
 
+    function setDeliveryReceipt($dr) {
+        $this->capsule['deliveryreceipt'] = $dr;
+    }     
     function getContent() {
         return $this->capsule['content'];
     }
@@ -95,7 +99,11 @@ class transportcapsule {
             return $str;
         }
     }
-
+    
+    function getDeliveryReceipt() {
+        return $this->capsule['deliveryreceipt'];
+    }     
+    
     function getCapsule() {
         return $this->capsule;
     }
@@ -103,7 +111,7 @@ class transportcapsule {
     function setCapsule(array $c) {
         if (array_key_exists('content', $c)) {
             $this->setContent($c['content']);
-        };
+        }
         if (array_key_exists('signature', $c)) {
             $this->setSignature($c['signature']);
         }
@@ -112,6 +120,9 @@ class transportcapsule {
         }
         if (array_key_exists('flags', $c)) {
             $this->setFlags($c['flags']);
+        }
+        if (array_key_exists('deliveryreceipt', $c)) {
+            $this->setDeliveryReceipt($c['deliveryreceipt']);
         }
     }
 
