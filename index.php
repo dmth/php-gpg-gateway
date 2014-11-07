@@ -96,7 +96,8 @@ if (!is_array($calledEndpoint)) {
         $resp = new transportcapsule();
 
         //If encryptiopn was required in the request.
-        if (in_array('ENCRYPTION_IS_REQUIRED', $flags)) {
+        //ToDo: THE 'TRUE' ENFORCES ENCRYPTION ON THE BACKCHANNEL
+        if (in_array('ENCRYPTION_IS_REQUIRED', $flags) || TRUE) {
             $responsecontent = $gpg->encrypt($gw->encode($responsearray), $rcvpublickey['fingerprint']);
             syslog(LOG_INFO, $responsecontent);
             $resp->setFlag('MESSAGE_IS_ENCRYPTED');
@@ -157,26 +158,30 @@ if (!is_array($calledEndpoint)) {
         if ($gpg->checkdetachedsigned($responsecontent, $resp->getSignature()) > 0) {
 
             // If we are here, there is at least one valid signature
-            // lets test if the data was signed by a trusted signature form the config file:
             $verify = $gpg->verify($responsecontent, $resp->getSignature());
-            foreach ($verify as $signatureobject) {
-                //ToDo: This might be a feature to inform the client wheter the Communication was successfull and secure.
-                //if (in_array($signatureobject->getKeyFingerprint(), $calledEndpoint['application.pgp.accepted.keys']) && ($signatureobject->isValid() == TRUE)) {
-                //Modify HTTP-Headers to include this Trustinformation
-                //$responsearray['headers']['X-PGP-Signed-By'] = $signatureobject->getKeyFingerprint();
-                //$responsearray['headers']['X-PGP-Signed-On'] = $signatureobject->getCreationDate();
-                //$responsearray['headers']['X-PGP-Valid'] = $signatureobject->isValid();
-                //}           
-            }
+            
             //ok. The Response might be encrypted. We have to check this first.
             if (in_array('MESSAGE_IS_ENCRYPTED', $resp->getFlags())){
                 //Message was encrypted.
                 //Decrypt
                 $responsearray = $gw->decode($gpg->decrypt($responsecontent));
+                //Add a header which stets that transport was 
+                $responsearray['headers']['X-PGP-EncryptedResponse'] = "TRUE";
             } else {
                 $responsearray = $gw->decode($responsecontent);
+                $responsearray['headers']['X-PGP-EncryptedResponse'] = "FALSE";
             }
             
+            // lets test if the data was signed by a trusted signature form the config file:
+            foreach ($verify as $signatureobject) {
+            //ToDo: This might be a feature to inform the client wheter the Communication was successfull and secure.
+                if (in_array($signatureobject->getKeyFingerprint(), $calledEndpoint['pgp.accepted.keys']) && ($signatureobject->isValid() == TRUE)) {
+                //Modify HTTP-Headers to include this Trustinformation
+                $responsearray['headers']['X-PGP-SignatureOf'] = $signatureobject->getKeyFingerprint();
+                $responsearray['headers']['X-PGP-SignatureDate'] = $signatureobject->getCreationDate();
+                $responsearray['headers']['X-PGP-SignatureValid'] = $signatureobject->isValid();
+                }
+            }
         } else {
             // The Signature of the Request was invalid!
             // Respond with an error!

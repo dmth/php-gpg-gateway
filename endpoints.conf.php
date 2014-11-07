@@ -38,7 +38,7 @@ return
                 'pgp.usepasswordfile' => FALSE, //determines whether passwordfile or password from config are used
                 'pgp.keyid' => 'FD0E37311717109EE23745AF81507E398A2521AC', //The Key-ID of this Service-Endpoint.
                 'pgp.keydir' => 'keys/application', //Has to be a writeable directory, but may not be reachable as an url i.e. like http://myUrl/keys
-                'pgp.accepted.keys' => ["42129EE0100273DAFCD8A5A76F4BE4C779469199"],
+                'pgp.accepted.keys' => ['42129EE0100273DAFCD8A5A76F4BE4C779469199'],
             ],
             [   //Service Endpoint
                 'endpoint.url' => '/service',

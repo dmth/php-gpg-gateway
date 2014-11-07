@@ -110,7 +110,7 @@ class gpgphelper {
             exit(1); //Fail.
         }
 
-        syslog(LOG_INFO, 'gpgphelper: (encrypt) Public Key of Receiver: ' . $publickeyidofreceiver);
+        syslog(LOG_INFO, 'gpgphelper: (encrypting) With KeyID of Receiver (publickey): ' . $publickeyidofreceiver);
         $this->gpg->addEncryptkey($publickeyidofreceiver);
         
         return $this->gpg->encrypt($data, false);
@@ -133,6 +133,7 @@ class gpgphelper {
         }
         
         $this->gpg->addDecryptkey($pgpkeyid, $pgppassphrase);
+        syslog(LOG_INFO, 'gpgphelper: (decrypting) With my KeyID (privatekey): ' . $pgpkeyid);
         return $this->gpg->decrypt($data);       
     }
     
