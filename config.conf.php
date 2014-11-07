@@ -57,7 +57,8 @@ return [
         'RECEPTION_RECEIPT_REQUIRED'    => 2, //If this Flag is present, a Reception Receipt has to be sent
         'ENCRYPTION_IS_REQUIRED'        => 4, // If this Flag is Present, the content MUST be encrypted
         'MESSAGE_IS_ENCRYPTED'          => 8// If this Flag is present, the content-data is encrypted
-    ]
+    ],
+    'mail' => include('smtp.conf.php')
 ];
 
 
