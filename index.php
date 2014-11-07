@@ -31,6 +31,7 @@ require_once('servicegateway.php');
 require_once('applicationgateway.php');
 require_once('gpghelper.php');
 require_once('transportcapsule.php');
+require_once('receiptHandler.php');
 
 
 $config = include('config.conf.php');
@@ -58,13 +59,13 @@ if (!is_array($calledEndpoint)) {
 
         $encodedquery = $gw->startGW()['post']; //We are only interested in the values which were posted to this gateway
 
-        $req = new transportcapsule();
-        $req->setCapsule($encodedquery);
-
-        $content = $req->getContent(); // retrieve posted data
-        $signature = $req->getSignature(); // retrieve posted signature of the data
-        $publickey = $req->getPublickey(); // retrieve the public key
-        $flags = $req->getFlags(); // retrieve flags sent by the applicationgateway
+        $requestCapsule = new transportcapsule();
+        $requestCapsule->setCapsule($encodedquery);
+        $md5hashOfTC = md5($requestCapsule->serialise());
+        $content = $requestCapsule->getContent(); // retrieve posted data
+        $signature = $requestCapsule->getSignature(); // retrieve posted signature of the data
+        $publickey = $requestCapsule->getPublickey(); // retrieve the public key
+        $flags = $requestCapsule->getFlags(); // retrieve flags sent by the applicationgateway
         //start GPG and encryption:
         $gpg = new gpgphelper();
         $gpg->init($calledEndpoint);
@@ -75,7 +76,29 @@ if (!is_array($calledEndpoint)) {
             $decodedcontent = $gw->decode($content); //de-base64, deserialise
             // ToDo: Content might be encrypted. This has to be checked. Then it has to be decrypted.
 
-            $response = $gw->connect($decodedcontent);
+            $response = $gw->connect($decodedcontent); //connect to configured endpoint (geoservice)
+
+            if (in_array('RECEPTION_RECEIPT_REQUIRED', $flags)) {
+                //IF Required generate and send ReceptionReceipt
+                $receiptMSG = "The Service Gateway forwarded your request to a Geoservice and received a response from it.";
+                $receiptMSG .= "\nThis implies that the ultimate recipient received your request.";
+                $receiptMSG .= "\nYour Response should be on its way right now.";
+                $receiptMSG .= "\n\n";
+                $receiptMSG .= "The MD5-Hash of the request the Service Gateway has received is:";
+                $receiptMSG .= "\n";
+                $receiptMSG .= $md5hashOfTC;
+                $receiptMSG .= "\n";
+                $receiptMSG .= "You should have received an other E-Mail. Please compare the MD5 Hashes.";
+                $receiptMSG .= "\n";
+                $receiptMSG .= "\nTo verify the validity of this message, you might need to import the Public-Key of the Service Gateway.";
+                $receiptMSG .= "\nIt is attached to this message.";
+                $receiverMail = $gpg->getEmailAddress($rcvpublickey['fingerprint']);
+                $senderMail = $calledEndpoint['endpoint.postbox.address'];
+
+                $signedMSG = $gpg->signMessage($receiptMSG);
+                $rH = new receiptHandler($receiverMail, $senderMail, $signedMSG, $config['mail']);
+                $rH->sendReceipt('Confirmation of receipt', $gpg->exportArmoredPublickey());
+            }
         } else {
             // The Signature of the Request was invalid!
             // Respond with an error!
@@ -93,32 +116,31 @@ if (!is_array($calledEndpoint)) {
         ];
 
 
-        $resp = new transportcapsule();
+        $responseCapsule = new transportcapsule();
 
         //If encryptiopn was required in the request.
         //ToDo: THE 'TRUE' ENFORCES ENCRYPTION ON THE BACKCHANNEL
         if (in_array('ENCRYPTION_IS_REQUIRED', $flags) || TRUE) {
             $responsecontent = $gpg->encrypt($gw->encode($responsearray), $rcvpublickey['fingerprint']);
-            syslog(LOG_INFO, $responsecontent);
-            $resp->setFlag('MESSAGE_IS_ENCRYPTED');
+            $responseCapsule->setFlag('MESSAGE_IS_ENCRYPTED');
         } else {
             $responsecontent = $gw->encode($responsearray);
         }
 
 
-        $resp->setContent($responsecontent);
-        $resp->setSignature($gpg->sign($responsecontent));
-        $resp->setPublickey($gpg->exportpublickey());
+        $responseCapsule->setContent($responsecontent);
+        $responseCapsule->setSignature($gpg->sign($responsecontent));
+        $responseCapsule->setPublickey($gpg->exportPublickey());
 
         //Set Flags for the response.
         if (in_array('RECEPTION_RECEIPT_REQUIRED', $calledEndpoint['endpoint.policy'])) {
-            $resp->setFlag('RECEPTION_RECEIPT_REQUIRED');
+            $responseCapsule->setFlag('RECEPTION_RECEIPT_REQUIRED');
         }
         if (in_array('DELIVERY_RECEIPT_REQUIRED', $calledEndpoint['endpoint.policy'])) {
-            $resp->setFlag('DELIVERY_RECEIPT_REQUIRED');
+            $responseCapsule->setFlag('DELIVERY_RECEIPT_REQUIRED');
         }
 
-        $gw->send($resp->serialise());
+        $gw->send($responseCapsule->serialise());
     } elseif (strcasecmp($calledEndpoint['endpoint.role'], $config['allowedendpointroles']['app']) == 0) {
         /*
          * A P P L I C A T I O N  - Gateway
@@ -135,33 +157,59 @@ if (!is_array($calledEndpoint)) {
         $gpg->init($calledEndpoint);
 
         //Create a new Transportcapsule which will get hold of content signature and publickey
-        $req = new transportcapsule();
+        $requestCapsule = new transportcapsule();
 
         $content = $gw->encode($request);
-        $req->setContent($content);
-        $req->setSignature($gpg->sign($content));
-        $req->setPublickey($gpg->exportpublickey());
-        $req->setFlags($calledEndpoint['endpoint.policy']);
+        $requestCapsule->setContent($content);
+        $requestCapsule->setSignature($gpg->sign($content));
+        $requestCapsule->setPublickey($gpg->exportPublickey());
+        $requestCapsule->setFlags($calledEndpoint['endpoint.policy']);
 
+        //Use this MD5 Hash to validate the Receipts.
+        $md5hashOfTC = md5($requestCapsule->serialise());
+        syslog(LOG_DEBUG, "Application Gateway: Created new Transport Capsule with MD5Hash: ".$md5hashOfTC);
+        
+        
+        //Send E-Mail to Application-Gateway E-Mail address to inform about the MD5Hash of the Request.
+        if (in_array('RECEPTION_RECEIPT_REQUIRED', $requestCapsule->getFlags())) {
+                //IF Required generate and send ReceptionReceipt
+                $receiptMSG = "The Application Gateway will forwarded your request to a Service Gateway.";
+                $receiptMSG .= "\n\n";
+                $receiptMSG .= "The MD5-Hash of your request is:";
+                $receiptMSG .= "\n";
+                $receiptMSG .= $md5hashOfTC;
+                $receiptMSG .= "\n";
+                $receiptMSG .= "You should receive an E-Mail from the Service Gateway soon. Please compare the MD5 Hashes.";
+                $receiptMSG .= "\n";
+                $receiptMSG .= "\nTo verify the validity of this message, you might need to import the Public-Key of the Application Gateway.";
+                $receiptMSG .= "\nIt is attached to this message.";
+                $receiverMail = $gpg->getEmailAddress($calledEndpoint['pgp.keyid']);
+                $senderMail = $calledEndpoint['endpoint.postbox.address'];
+
+                $signedMSG = $gpg->signMessage($receiptMSG);
+                $rH = new receiptHandler($receiverMail, $senderMail, $signedMSG, $config['mail']);
+                $rH->sendReceipt('Your new request is beeing processed', $gpg->exportArmoredPublickey());
+        }
+        
         //connect to the configured service-endpoint of this gateway, 
         //and send the transportcapsule away.
-        $r = $gw->connect($req->getCapsule()); // this returns an other transporcapsule as a string r
+        $r = $gw->connect($requestCapsule->getCapsule()); // this returns an other transporcapsule as a string r
 
-        $resp = new transportcapsule();
-        $resp->deserialise($r); //unserializes the string $r and parse into the transportcapsule.
+        $responseCapsule = new transportcapsule();
+        $responseCapsule->deserialise($r); //unserializes the string $r and parse into the transportcapsule.
         //ToDo this should not always be required
-        $gpg->importpublickey($resp->getPublickey());
+        $gpg->importpublickey($responseCapsule->getPublickey());
 
-        $responsecontent = $resp->getContent();
-        
+        $responsecontent = $responseCapsule->getContent();
+
         //Check if the signature was valid.
-        if ($gpg->checkdetachedsigned($responsecontent, $resp->getSignature()) > 0) {
+        if ($gpg->checkdetachedsigned($responsecontent, $responseCapsule->getSignature()) > 0) {
 
             // If we are here, there is at least one valid signature
-            $verify = $gpg->verify($responsecontent, $resp->getSignature());
-            
+            $verify = $gpg->verify($responsecontent, $responseCapsule->getSignature());
+
             //ok. The Response might be encrypted. We have to check this first.
-            if (in_array('MESSAGE_IS_ENCRYPTED', $resp->getFlags())){
+            if (in_array('MESSAGE_IS_ENCRYPTED', $responseCapsule->getFlags())) {
                 //Message was encrypted.
                 //Decrypt
                 $responsearray = $gw->decode($gpg->decrypt($responsecontent));
@@ -171,15 +219,15 @@ if (!is_array($calledEndpoint)) {
                 $responsearray = $gw->decode($responsecontent);
                 $responsearray['headers']['X-PGP-EncryptedResponse'] = "FALSE";
             }
-            
+
             // lets test if the data was signed by a trusted signature form the config file:
             foreach ($verify as $signatureobject) {
-            //ToDo: This might be a feature to inform the client wheter the Communication was successfull and secure.
+                //ToDo: This might be a feature to inform the client wheter the Communication was successfull and secure.
                 if (in_array($signatureobject->getKeyFingerprint(), $calledEndpoint['pgp.accepted.keys']) && ($signatureobject->isValid() == TRUE)) {
-                //Modify HTTP-Headers to include this Trustinformation
-                $responsearray['headers']['X-PGP-SignatureOf'] = $signatureobject->getKeyFingerprint();
-                $responsearray['headers']['X-PGP-SignatureDate'] = $signatureobject->getCreationDate();
-                $responsearray['headers']['X-PGP-SignatureValid'] = $signatureobject->isValid();
+                    //Modify HTTP-Headers to include this Trustinformation
+                    $responsearray['headers']['X-PGP-SignatureOf'] = $signatureobject->getKeyFingerprint();
+                    $responsearray['headers']['X-PGP-SignatureDate'] = $signatureobject->getCreationDate();
+                    $responsearray['headers']['X-PGP-SignatureValid'] = $signatureobject->isValid();
                 }
             }
         } else {

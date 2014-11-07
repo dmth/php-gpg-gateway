@@ -1,5 +1,6 @@
 {
     "require": {
-        "nategood/httpful": "*"
+        "nategood/httpful": "*",
+        "phpmailer/phpmailer": "dev-master"
     }
 }

@@ -29,7 +29,7 @@ return
             [   //Application Endpoint
                 'endpoint.url' => '/application',
                 'endpoint.role' => 'application', //This is the client side
-                'endpoint.policy' => ['ENCRYPTION_IS_REQUIRED'],
+                'endpoint.policy' => ['ENCRYPTION_IS_REQUIRED', 'RECEPTION_RECEIPT_REQUIRED'],
                 'endpoint.postbox.address' => 'application@demuth.mobi',
                 'endpoint.service.connecturl' => 'http://127.0.0.1/service', //The Url of the counterpart of this application
                 'pgp.password' => 'application', //If the private key requires a password, it can be entered here.
@@ -43,7 +43,7 @@ return
             [   //Service Endpoint
                 'endpoint.url' => '/service',
                 'endpoint.role' => 'service', //This is a server side
-                'endpoint.policy' => ['ENCRYPTION_IS_REQUIRED'],
+                'endpoint.policy' => ['ENCRYPTION_IS_REQUIRED', 'RECEPTION_RECEIPT_REQUIRED'],
                 'endpoint.postbox.address' => 'service@demuth.mobi',
                 'endpoint.service.connecturl' => 'http://maverick.arcgis.com/arcgis/services/USA/MapServer/WMSServer', //Which service shall receive the request?
                 //i.e. http://maverick.arcgis.com/arcgis/services/USA/MapServer/WMSServer?SERVICE=WMS&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=default&VERSION=1.3.0&LAYERS=0&WIDTH=1920&HEIGHT=752&CRS=EPSG:4326&BBOX=25.0536602794336,-127.92427191904663,49.803660279433615,-64.73278255734446

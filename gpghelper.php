@@ -102,6 +102,32 @@ class gpgphelper {
         return $detachedsig;
     }
     
+    function signMessage($data) {
+        $pgpkeyid = $this->endpoint['pgp.keyid'];
+        $pgppassphrase = $this->getpasswd();
+
+        if (!is_string($pgpkeyid)) {
+            //ToDo Throw an Exeception
+            error_log('gpgphelper: (sign) The KeyID for the gpg-key is not configured');
+            exit(1); //Fail.
+        }
+
+        if (!is_string($pgppassphrase)) {
+            //ToDo Throw an Exeception
+            error_log('gpgphelper: (sign) No password provided for this gpg-key');
+            exit(1); //Fail.
+        }
+
+        syslog(LOG_INFO, 'gpgphelper: (sign) keyid: ' . $pgpkeyid);
+        // ToDo handling the passphrase appears to be buggy. crypt_gpg reports that no passphrase was provided.
+        // ugly circumvention is to use NO passprase.
+        
+        $this->gpg->addSignkey($pgpkeyid, $pgppassphrase);
+        $msg = $this->gpg->sign($data);
+        return $msg;
+    }
+    
+    
     function encrypt($data, $publickeyidofreceiver) {
         
         if (!is_string($publickeyidofreceiver)) {
@@ -179,12 +205,33 @@ class gpgphelper {
     /*
      * Exports the public key of this gateway
      */
-    function exportpublickey(){
+    function exportPublickey(){
         $pgpkeyid = $this->endpoint['pgp.keyid'];
-        return $this->gpg->exportPublicKey($pgpkeyid, false);
+        return $this->gpg->exportPublickey($pgpkeyid, false);
+    }
+    
+    /*
+     * Exports the ASCII-Armored public key of this gateway
+     */
+    function exportArmoredPublickey(){
+        $pgpkeyid = $this->endpoint['pgp.keyid'];
+        return $this->gpg->exportPublickey($pgpkeyid, true);
     }
     
     function importpublickey($key){
         return $this->gpg->importKey($key);
+    }
+    
+    function getEmailAddress($fingerprint){
+        $key = $this->gpg->getKeys($fingerprint);
+        //ToDo array might be empty!
+        $r = '';
+        if(!empty($key)){
+            $uids = $key[0]->getUserIDs();
+            if(!empty($uids)){
+                $r = $uids[0]->getEmail(); //pick the first e-mail address.
+            }
+        }
+        return $r; 
     }
 }
