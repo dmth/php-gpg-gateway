@@ -29,7 +29,7 @@ return
             [   //Application Endpoint
                 'endpoint.url' => '/application',
                 'endpoint.role' => 'application', //This is the client side
-                'endpoint.policy' => ['ENCRYPTION_IS_REQUIRED', 'RECEPTION_RECEIPT_REQUIRED'],
+                'endpoint.policy' => ['ENCRYPTION_IS_REQUIRED', 'RECEPTION_RECEIPT_REQUIRED', 'DELIVERY_RECEIPT_REQUIRED'],
                 'endpoint.postbox.address' => 'application@demuth.mobi',
                 'endpoint.service.connecturl' => 'http://127.0.0.1/service', //The Url of the counterpart of this application
                 'pgp.password' => 'application', //If the private key requires a password, it can be entered here.

@@ -75,30 +75,14 @@ if (!is_array($calledEndpoint)) {
         if ($gpg->checkdetachedsigned($content, $signature) > 0) {
             $decodedcontent = $gw->decode($content); //de-base64, deserialise
             // ToDo: Content might be encrypted. This has to be checked. Then it has to be decrypted.
+            //If the Requestor asked for a delivery receipt...
+            $deliveryreceipt = "";
+            if (in_array('DELIVERY_RECEIPT_REQUIRED', $flags)) {
+                $deliveryreceipt = $gpg->signMessage($md5hashOfTC);
+            }
+
 
             $response = $gw->connect($decodedcontent); //connect to configured endpoint (geoservice)
-
-            if (in_array('RECEPTION_RECEIPT_REQUIRED', $flags)) {
-                //IF Required generate and send ReceptionReceipt
-                $receiptMSG = "The Service Gateway forwarded your request to a Geoservice and received a response from it.";
-                $receiptMSG .= "\nThis implies that the ultimate recipient received your request.";
-                $receiptMSG .= "\nYour Response should be on its way right now.";
-                $receiptMSG .= "\n\n";
-                $receiptMSG .= "The MD5-Hash of the request the Service Gateway has received is:";
-                $receiptMSG .= "\n";
-                $receiptMSG .= $md5hashOfTC;
-                $receiptMSG .= "\n";
-                $receiptMSG .= "You should have received an other E-Mail. Please compare the MD5 Hashes.";
-                $receiptMSG .= "\n";
-                $receiptMSG .= "\nTo verify the validity of this message, you might need to import the Public-Key of the Service Gateway.";
-                $receiptMSG .= "\nIt is attached to this message.";
-                $receiverMail = $gpg->getEmailAddress($rcvpublickey['fingerprint']);
-                $senderMail = $calledEndpoint['endpoint.postbox.address'];
-
-                $signedMSG = $gpg->signMessage($receiptMSG);
-                $rH = new receiptHandler($receiverMail, $senderMail, $signedMSG, $config['mail']);
-                $rH->sendReceipt('Confirmation of receipt', $gpg->exportArmoredPublickey());
-            }
         } else {
             // The Signature of the Request was invalid!
             // Respond with an error!
@@ -132,15 +116,50 @@ if (!is_array($calledEndpoint)) {
         $responseCapsule->setSignature($gpg->sign($responsecontent));
         $responseCapsule->setPublickey($gpg->exportPublickey());
 
+        if (!empty($deliveryreceipt)) {
+            $responseCapsule->setDeliveryReceipt($deliveryreceipt);
+        }
+
         //Set Flags for the response.
         if (in_array('RECEPTION_RECEIPT_REQUIRED', $calledEndpoint['endpoint.policy'])) {
             $responseCapsule->setFlag('RECEPTION_RECEIPT_REQUIRED');
         }
-        if (in_array('DELIVERY_RECEIPT_REQUIRED', $calledEndpoint['endpoint.policy'])) {
-            $responseCapsule->setFlag('DELIVERY_RECEIPT_REQUIRED');
+        /*
+         * The Application Gateway can not answer on Delivery-Receipt Requests.
+         */
+        //if (in_array('DELIVERY_RECEIPT_REQUIRED', $calledEndpoint['endpoint.policy'])) {
+        //    $responseCapsule->setFlag('DELIVERY_RECEIPT_REQUIRED');
+        //}
+        
+        $serialisedResponse = $responseCapsule->serialise();
+        $gw->send($serialisedResponse);
+
+        // In Case the Service Gateway has set the RECEPTION_RECEIPT_REQUIRED Flag, send an Email to the Service-gateway E-Mail address and inform about MD5 Hash
+        if (in_array('RECEPTION_RECEIPT_REQUIRED', $requestCapsule->getFlags())) {
+            $md5hashOfTCresp = md5($serialisedResponse);
+            $receiverMail = $gpg->getEmailAddress($calledEndpoint['pgp.keyid']);
+            $senderMail = $calledEndpoint['endpoint.postbox.address'];
+
+            $rH = new receiptHandler($receiverMail, $senderMail, $config['mail']);
+            $rH->messageID($md5hashOfTCresp); //Start a New E-mail Thread!
+            $rH->sendNotice($calledEndpoint, $gpg, $md5hashOfTCresp);
+
+            unset($rH, $receiptMSG, $signedMSG);
         }
 
-        $gw->send($responseCapsule->serialise());
+        // If the Requestor asked for a reception receipt...
+        // This should normally be done by the Ultimate Receipient.
+        // As the Ultimate Receipient does not support this feature, it is augmeneted by the Servcie Gateway
+        if (in_array('RECEPTION_RECEIPT_REQUIRED', $flags)) {
+            //If Required generate and send ReceptionReceipt          
+
+            $receiverMail = $gpg->getEmailAddress($rcvpublickey['fingerprint']);
+            $senderMail = $calledEndpoint['endpoint.postbox.address'];
+
+            $rH = new receiptHandler($receiverMail, $senderMail, $config['mail']);
+            $rH->inReplyTo($md5hashOfTC); //Reply to a Mail...
+            $rH->sendReceptionReceipt($calledEndpoint, $gpg, $md5hashOfTC);
+        }
     } elseif (strcasecmp($calledEndpoint['endpoint.role'], $config['allowedendpointroles']['app']) == 0) {
         /*
          * A P P L I C A T I O N  - Gateway
@@ -167,40 +186,54 @@ if (!is_array($calledEndpoint)) {
 
         //Use this MD5 Hash to validate the Receipts.
         $md5hashOfTC = md5($requestCapsule->serialise());
-        syslog(LOG_DEBUG, "Application Gateway: Created new Transport Capsule with MD5Hash: ".$md5hashOfTC);
-        
-        
+
         //Send E-Mail to Application-Gateway E-Mail address to inform about the MD5Hash of the Request.
         if (in_array('RECEPTION_RECEIPT_REQUIRED', $requestCapsule->getFlags())) {
-                //IF Required generate and send ReceptionReceipt
-                $receiptMSG = "The Application Gateway will forwarded your request to a Service Gateway.";
-                $receiptMSG .= "\n\n";
-                $receiptMSG .= "The MD5-Hash of your request is:";
-                $receiptMSG .= "\n";
-                $receiptMSG .= $md5hashOfTC;
-                $receiptMSG .= "\n";
-                $receiptMSG .= "You should receive an E-Mail from the Service Gateway soon. Please compare the MD5 Hashes.";
-                $receiptMSG .= "\n";
-                $receiptMSG .= "\nTo verify the validity of this message, you might need to import the Public-Key of the Application Gateway.";
-                $receiptMSG .= "\nIt is attached to this message.";
-                $receiverMail = $gpg->getEmailAddress($calledEndpoint['pgp.keyid']);
-                $senderMail = $calledEndpoint['endpoint.postbox.address'];
+            //IF Required generate and send ReceptionReceipt
 
-                $signedMSG = $gpg->signMessage($receiptMSG);
-                $rH = new receiptHandler($receiverMail, $senderMail, $signedMSG, $config['mail']);
-                $rH->sendReceipt('Your new request is beeing processed', $gpg->exportArmoredPublickey());
+            $receiverMail = $gpg->getEmailAddress($calledEndpoint['pgp.keyid']);
+            $senderMail = $calledEndpoint['endpoint.postbox.address'];
+
+            $rH = new receiptHandler($receiverMail, $senderMail, $config['mail']);
+            $rH->messageID($md5hashOfTC); //Start a New E-mail Thread!
+            $rH->sendNotice($calledEndpoint, $gpg, $md5hashOfTC);
+
+            unset($rH, $receiptMSG, $signedMSG);
         }
-        
+
         //connect to the configured service-endpoint of this gateway, 
         //and send the transportcapsule away.
-        $r = $gw->connect($requestCapsule->getCapsule()); // this returns an other transporcapsule as a string r
+        $r = $gw->connect($requestCapsule->getCapsule()); // this returns an other transportcapsule as a string r
 
         $responseCapsule = new transportcapsule();
+        $md5hashOfRespTC = md5($r);
         $responseCapsule->deserialise($r); //unserializes the string $r and parse into the transportcapsule.
+        
         //ToDo this should not always be required
-        $gpg->importpublickey($responseCapsule->getPublickey());
+        $rsppublickey = $gpg->importpublickey($responseCapsule->getPublickey());
 
         $responsecontent = $responseCapsule->getContent();
+
+        $deliveryreceipt = $responseCapsule->getDeliveryReceipt();
+
+        if (!empty($deliveryreceipt)) {
+            $validrcpt = $gpg->checkclearsigned($deliveryreceipt);
+            if ($validrcpt > 0) {
+                $receiverMail = $gpg->getEmailAddress($calledEndpoint['pgp.keyid']);
+                $senderMail = $calledEndpoint['endpoint.postbox.address'];
+                $rH = new receiptHandler($receiverMail, $senderMail, $config['mail']);
+                //Differentiate now. If RECEPTION_RECEIPT_REQUIRED is set, An E-Mail was already sent. So we need to say in-Reply-to. Else: New E-mail Thread
+                if (in_array('RECEPTION_RECEIPT_REQUIRED', $requestCapsule->getFlags())) {
+                    $rH->inReplyTo($md5hashOfTC); //Reply to existing E-mail Thread!
+                } else {
+                    $rH->messageID($md5hashOfTC); //Start a New E-mail Thread!
+                }
+                $rH->sendDeliveryReceipt($calledEndpoint, $gpg, $deliveryreceipt);
+                unset($rH);
+            } else {
+                //ToDo
+            }
+        }
 
         //Check if the signature was valid.
         if ($gpg->checkdetachedsigned($responsecontent, $responseCapsule->getSignature()) > 0) {
@@ -253,6 +286,18 @@ if (!is_array($calledEndpoint)) {
 
         //now send the received data to the client
         $gw->send($responsearray['body']);
+
+        //if the service gateway asked for a reception-receipt we should send this now...
+        if (in_array('RECEPTION_RECEIPT_REQUIRED', $responseCapsule->getFlags())) {
+            //If Required generate and send ReceptionReceipt          
+
+            $receiverMail = $gpg->getEmailAddress($rsppublickey['fingerprint']);
+            $senderMail = $calledEndpoint['endpoint.postbox.address'];
+
+            $rH = new receiptHandler($receiverMail, $senderMail, $config['mail']);
+            $rH->inReplyTo($md5hashOfRespTC); //Reply to a Mail...
+            $rH->sendReceptionReceipt($calledEndpoint, $gpg, $md5hashOfRespTC);
+        }
     } else {
         //ToDo throw 50x or similar valid exception
         echo "ERROR: The endpoint " . $calledEndpoint['endpoint.url'] . " is misconfigured.\n The configured role " . $calledEndpoint['endpoint.role'] . " is unknown.";
