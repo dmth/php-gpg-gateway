@@ -34,7 +34,12 @@ class gpgphelper {
 
     protected $gpg;
     protected $endpoint;
-
+    private $config;
+                
+    function __construct($config) {
+       $this->config = $config;
+    }
+    
     /*
      * init() returns a new instance of the crypto library.
      * @param $calledEndpoint the endpoint which was called (i.e. /service1 ) used to determine the correct configuration.
@@ -42,7 +47,7 @@ class gpgphelper {
      */
 
     function init(array $calledEndpoint) {
-        $config = include('config.conf.php');
+        $config = $this->config;
         $gpgbinpath = $config['gpgbinpath'];
 
         $this->endpoint = $calledEndpoint;

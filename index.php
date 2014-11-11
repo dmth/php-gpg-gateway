@@ -34,7 +34,7 @@ require_once('transportcapsule.php');
 require_once('receiptHandler.php');
 
 
-$config = include('config.conf.php');
+$config = include('conf/config.conf.php');
 
 //load endpoints
 //get endpoint from http-get
@@ -44,8 +44,8 @@ $calledEndpoint = get_endpoint_config($config['endpointsconfig'], $invokedendpoi
 
 if (!is_array($calledEndpoint)) {
     //ToDo Throw 404 or similar valid exception!
-    echo "ERROR: The provided enpoint was not yet configured.";
-} else {
+    echo "ERROR: The provided endpoint was not yet configured.";
+} else if ($calledEndpoint['endpoint.disabled'] == FALSE) {
     //A config for the endpoint was found,
     //Determine the role of the enpoint.
     //This can be either 'service' or 'application', as defined in $config
@@ -54,7 +54,7 @@ if (!is_array($calledEndpoint)) {
          * S E R V I C E  - Gateway
          * ToDo: encapsulate this code into a function or similar. 
          */
-        $silo = new httpinputsilo(); //retrieve http-input         
+        $silo = new httpinputsilo($config); //retrieve http-input         
         $gw = new servicegateway($silo, $calledEndpoint);  //create a new gateway with access to the HTTP Parametersand configure it.
 
         $encodedquery = $gw->startGW()['post']; //We are only interested in the values which were posted to this gateway
@@ -67,7 +67,7 @@ if (!is_array($calledEndpoint)) {
         $publickey = $requestCapsule->getPublickey(); // retrieve the public key
         $flags = $requestCapsule->getFlags(); // retrieve flags sent by the applicationgateway
         //start GPG and encryption:
-        $gpg = new gpgphelper();
+        $gpg = new gpgphelper($config);
         $gpg->init($calledEndpoint);
         $rcvpublickey = $gpg->importpublickey($publickey);
 
@@ -166,13 +166,13 @@ if (!is_array($calledEndpoint)) {
          * ToDo: encapsulate this code into a function or similar. 
          */
 
-        $silo = new httpinputsilo();
+        $silo = new httpinputsilo($config);
         $gw = new applicationgateway($silo, $calledEndpoint); //create a new gateway with access to the HTTP Parameters and configure it
 
         $request = $gw->startGW();
 
         //start GPG and encryption:
-        $gpg = new gpgphelper();
+        $gpg = new gpgphelper($config);
         $gpg->init($calledEndpoint);
 
         //Create a new Transportcapsule which will get hold of content signature and publickey
@@ -302,6 +302,9 @@ if (!is_array($calledEndpoint)) {
         //ToDo throw 50x or similar valid exception
         echo "ERROR: The endpoint " . $calledEndpoint['endpoint.url'] . " is misconfigured.\n The configured role " . $calledEndpoint['endpoint.role'] . " is unknown.";
     }
+} else {
+    //ToDo Throw 404 or similar valid exception!
+    echo "ERROR: The provided endpoint exists, but was disabled.";
 }
 
 /*

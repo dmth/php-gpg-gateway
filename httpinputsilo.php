@@ -36,8 +36,10 @@ class httpinputsilo {
     private $getrequest; //The data which was transmitted as HTTP Get to the Service
     private $postrequest; //The data which was transmitted as HTTP Post to the Service
     private $headers; //The Headers which have been transmitted to the Service
-
-   function __construct() {
+    private $config;
+    
+   function __construct($config) {
+       $this->config = $config;
        $this->retrieveRequest();
    }
     
@@ -57,7 +59,7 @@ class httpinputsilo {
 
         }
 
-        $config = include('config.conf.php');
+        $config = $this->config;
         $this->getrequest = filter_input_array(INPUT_GET);
         $this->postrequest = filter_input_array(INPUT_POST);
         $this->headers = getallheaders();
