@@ -33,9 +33,6 @@ return [
      */
     'gpgbinpath' => '/usr/bin/gpg',
     'httpgetparametername' => 'endpoint',
-    'contentname' => 'content',
-    'signaturename' => 'signature',
-    'publickeyname' => 'pubkey',
     /*
      * Where are the enpoints configured?
      */
