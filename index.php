@@ -95,16 +95,22 @@ if (!is_array($calledEndpoint)) {
         // we are interested in raw_headers and raw_body to create a response object.
         // ToDo: Response-Object might not exist due to errors!
         $responsearray = [
-            'headers' => $response->_parseHeaders($response->raw_headers),
-            'body' => $response->raw_body
+            'headers' => $response->_parseHeaders(
+                    str_replace(
+                            $calledEndpoint['endpoint.service.connecturl'],
+                            $_SERVER['HTTP_HOST'].$calledEndpoint['endpoint.url'],
+                            $response->raw_headers
+                            )
+                    ), //replace all occurences of the endpoint.service.connecturl with the URL of this endpoint
+            'body' => str_replace($calledEndpoint['endpoint.service.connecturl'],$_SERVER['HTTP_HOST'].$calledEndpoint['endpoint.url'],$response->raw_body) //replace all occurences of the endpoint.service.connecturl with the URL of this endpoint
+                //the replacements are required to obfuscate the original service
         ];
-
-
+        
         $responseCapsule = new transportcapsule();
 
         //If encryptiopn was required in the request.
         //ToDo: THE 'TRUE' ENFORCES ENCRYPTION ON THE BACKCHANNEL
-        if (in_array('ENCRYPTION_IS_REQUIRED', $flags) || TRUE) {
+        if (in_array('ENCRYPTION_IS_REQUIRED', $flags) && FALSE) {
             $responsecontent = $gpg->encrypt($gw->encode($responsearray), $rcvpublickey['fingerprint']);
             $responseCapsule->setFlag('MESSAGE_IS_ENCRYPTED');
         } else {
@@ -131,7 +137,7 @@ if (!is_array($calledEndpoint)) {
         //    $responseCapsule->setFlag('DELIVERY_RECEIPT_REQUIRED');
         //}
         
-        $serialisedResponse = $responseCapsule->serialise();
+        $serialisedResponse = $responseCapsule->serialise();       
         $gw->send($serialisedResponse);
 
         // In Case the Service Gateway has set the RECEPTION_RECEIPT_REQUIRED Flag, send an Email to the Service-gateway E-Mail address and inform about MD5 Hash
@@ -274,18 +280,17 @@ if (!is_array($calledEndpoint)) {
         // also the original request is accessible within the response object.
         // we are interested in raw_headers and raw_body to create a response object.     
         // ToDo: Response-Object might not exist due to errors!
-        // ToDo: Replace URLs with applicationgateway-url in Response
-        //  If: 'service.MITM.urlReplacement' => TRUE
-        //  Then: Replace all original-server-address-URLs with the URL of the application gateway.
-        //  
-        // ToDo: Recalculate Content-Length-Header after Replacement   
+        // ToDo: The Service-Gateway url is obfuscated... it might be required to:
+        //   Recalculate Content-Length-Header after Replacement   
         //return the headers which were retrieved from the http-client.
         foreach ($responsearray['headers'] as $key => $value) {
-            header($key . ":" . $value);
+            $v = str_replace($calledEndpoint['endpoint.service.connecturl'],$_SERVER['HTTP_HOST'].$calledEndpoint['endpoint.url'],$value); //obfuscate gateway url
+            header($key . ":" . $v);
         }
 
         //now send the received data to the client
-        $gw->send($responsearray['body']);
+        $bdy = str_replace($calledEndpoint['endpoint.service.connecturl'],$_SERVER['HTTP_HOST'].$calledEndpoint['endpoint.url'],$responsearray['body']);//obfuscate gateway url
+        $gw->send($bdy);
 
         //if the service gateway asked for a reception-receipt we should send this now...
         if (in_array('RECEPTION_RECEIPT_REQUIRED', $responseCapsule->getFlags())) {

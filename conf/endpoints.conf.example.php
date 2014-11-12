@@ -37,7 +37,7 @@ return
                 'endpoint.disabled' => FALSE,
                 'endpoint.policy' => ['ENCRYPTION_IS_REQUIRED', 'RECEPTION_RECEIPT_REQUIRED', 'DELIVERY_RECEIPT_REQUIRED'], // Flags which define the Policy of this gateway. Can be a combination of transporflags listet in config.conf.php
                 'endpoint.postbox.address' => '',
-                'endpoint.service.connecturl' => '', //The URL of the counterpart of this application (a Service Gateway)
+                'endpoint.service.connecturl' => '', //The URL of the counterpart of this application (a Service Gateway) without protocol specification.
                 'pgp.password' => '', //If the private key requires a password, it can be entered here.
                 //pathphraseprotected keys are currently not supported.
                 'pgp.pathtopassword' => '', //If the Password for your private pgp-key is stored in a file, this is the path to it
@@ -53,7 +53,7 @@ return
                 'endpoint.disabled' => FALSE,
                 'endpoint.policy' => ['ENCRYPTION_IS_REQUIRED', 'RECEPTION_RECEIPT_REQUIRED'], // Flags which define the Policy of this gateway. Can be a combination of transporflags listet in config.conf.php
                 'endpoint.postbox.address' => '',
-                'endpoint.service.connecturl' => '', //The URL of the service which shall receive the request
+                'endpoint.service.connecturl' => '',//The URL of the counterpart of this application (a Service Gateway) without protocol specification.
                 'pgp.password' => '', //If the private key requires a password, it can be entered here.
                 //pathphraseprotected keys are currently not supported.
                 'pgp.pathtopassword' => '', //If the Password for your private pgp-key is stored in a file, this is the path to it
