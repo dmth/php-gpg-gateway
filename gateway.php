@@ -35,10 +35,12 @@ class gateway {
 
     protected $httpinputsilo;
     protected $endpointconfig;
+    protected $httpgetparamname;
 
-    function __construct(httpinputsilo $silo, $config){
+    function __construct(httpinputsilo $silo, $endpointconfig, $httpgetparamname){
         $this->setSilo($silo);
-        $this->setEndpointConfig($config);
+        $this->setEndpointConfig($endpointconfig);
+        $this->httpgetparamname = $httpgetparamname;
         syslog(LOG_DEBUG, 'New '. $this->endpointconfig['endpoint.role']. ' Gateway: '. $this->endpointconfig['endpoint.url']);
     }
     

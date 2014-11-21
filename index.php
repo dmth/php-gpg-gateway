@@ -55,7 +55,7 @@ if (!is_array($calledEndpoint)) {
          * ToDo: encapsulate this code into a function or similar. 
          */
         $silo = new httpinputsilo($config); //retrieve http-input         
-        $gw = new servicegateway($silo, $calledEndpoint);  //create a new gateway with access to the HTTP Parametersand configure it.
+        $gw = new servicegateway($silo, $calledEndpoint, $config['httpgetparametername']);  //create a new gateway with access to the HTTP Parametersand configure it.
 
         $encodedquery = $gw->startGW()['post']; //We are only interested in the values which were posted to this gateway
 
@@ -102,7 +102,8 @@ if (!is_array($calledEndpoint)) {
                             $response->raw_headers
                             )
                     ), //replace all occurences of the endpoint.service.connecturl with the URL of this endpoint
-            'body' => str_replace($calledEndpoint['endpoint.service.connecturl'],$_SERVER['HTTP_HOST'].$calledEndpoint['endpoint.url'],$response->raw_body) //replace all occurences of the endpoint.service.connecturl with the URL of this endpoint
+            //Todo Check whether / is needed."/"
+            'body' => str_replace($calledEndpoint['endpoint.service.connecturl'],$_SERVER['HTTP_HOST'].$calledEndpoint['endpoint.url']."/",$response->raw_body) //replace all occurences of the endpoint.service.connecturl with the URL of this endpoint
                 //the replacements are required to obfuscate the original service
         ];
         
@@ -173,7 +174,7 @@ if (!is_array($calledEndpoint)) {
          */
 
         $silo = new httpinputsilo($config);
-        $gw = new applicationgateway($silo, $calledEndpoint); //create a new gateway with access to the HTTP Parameters and configure it
+        $gw = new applicationgateway($silo, $calledEndpoint, $config['httpgetparametername']); //create a new gateway with access to the HTTP Parameters and configure it
 
         $request = $gw->startGW();
 
@@ -283,13 +284,18 @@ if (!is_array($calledEndpoint)) {
         // ToDo: The Service-Gateway url is obfuscated... it might be required to:
         //   Recalculate Content-Length-Header after Replacement   
         //return the headers which were retrieved from the http-client.
+        
+        //Replace traces of the Service Gateway URL in Headers
         foreach ($responsearray['headers'] as $key => $value) {
-            $v = str_replace($calledEndpoint['endpoint.service.connecturl'],$_SERVER['HTTP_HOST'].$calledEndpoint['endpoint.url'],$value); //obfuscate gateway url
+            //Todo Check whether / is needed
+            $v = str_replace($calledEndpoint['endpoint.service.connecturl'],$_SERVER['HTTP_HOST'].$calledEndpoint['endpoint.url']."/",$value); //obfuscate gateway url
             header($key . ":" . $v);
         }
-
+        
+        //Replace traces of the Service Gateway URL in the Body
+        //Todo Check whether / is needed
+        $bdy = str_replace($calledEndpoint['endpoint.service.connecturl'],$_SERVER['HTTP_HOST'].$calledEndpoint['endpoint.url']."/",$responsearray['body']);//obfuscate gateway url
         //now send the received data to the client
-        $bdy = str_replace($calledEndpoint['endpoint.service.connecturl'],$_SERVER['HTTP_HOST'].$calledEndpoint['endpoint.url'],$responsearray['body']);//obfuscate gateway url
         $gw->send($bdy);
 
         //if the service gateway asked for a reception-receipt we should send this now...

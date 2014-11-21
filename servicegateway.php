@@ -31,8 +31,8 @@ require_once('gateway.php');
  */
 class servicegateway extends gateway{
     
-    function __construct(httpinputsilo $silo, $config) {
-       parent::__construct($silo, $config);
+    function __construct(httpinputsilo $silo, $config, $httpgetparametername) {
+       parent::__construct($silo, $config, $httpgetparametername);
     }
     function __destruct() {
         parent::__destruct();
@@ -46,14 +46,24 @@ class servicegateway extends gateway{
         $serviceurl = $this->endpointconfig['endpoint.service.connecturl'];
         
         $get_r = "";
+        $serviceUrlAddon = "";
+        //Restore GET parameters...
         foreach ( $get as $key => $value){
+            
+            //The get Array contains an object called $config['httpgetparametername']
+            // The value of this object has to be added to the Service URL!
+            if ($key == $this->httpgetparamname){
+                $serviceUrlAddon = $value;
+                continue;
+            }
+            //in other cases:
             $get_r .= urlencode($key)."=".urlencode($value);
             if (!($value === end($get))){
                 $get_r .= "&";            
             }
         }
         
-        $url = $serviceurl."?".$get_r;
+        $url = $serviceurl.$serviceUrlAddon."?".$get_r;
         //ToDo Post
         if ($post == ""){
             $response = \Httpful\Request::get($url)->send();

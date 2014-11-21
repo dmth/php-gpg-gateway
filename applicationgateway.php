@@ -31,8 +31,8 @@ require_once('gateway.php');
  */
 class applicationgateway extends gateway{
     
-    function __construct(httpinputsilo $silo, $config) {
-       parent::__construct($silo, $config);
+    function __construct(httpinputsilo $silo, $config, $httpgetparametername) {
+       parent::__construct($silo, $config, $httpgetparametername);
     }
     function __destruct() {
         parent::__destruct();

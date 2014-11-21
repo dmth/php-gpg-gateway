@@ -32,7 +32,7 @@ return [
      *   rewrite  ^(/.*)$ /index.php?endpoint=$1 last;
      */
     'gpgbinpath' => '/usr/bin/gpg',
-    'httpgetparametername' => 'endpoint',
+    'httpgetparametername' => 'endpoint', //Has to be identical on both gateways!
     /*
      * Where are the enpoints configured?
      */

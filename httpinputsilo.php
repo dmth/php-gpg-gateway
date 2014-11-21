@@ -63,11 +63,17 @@ class httpinputsilo {
         $this->getrequest = filter_input_array(INPUT_GET);
         $this->postrequest = filter_input_array(INPUT_POST);
         $this->headers = getallheaders();
-        
+
         //sanitize the arrays, as the endpoint which was called might still be stored in it.
         //this is necessary as http://myurl/service was parsed to http://myurl/?endpoint=service
         //we don't want this information in our GET array.
-        unset($this->getrequest[$config['httpgetparametername']]);
+        //unset($this->getrequest[$config['httpgetparametername']]);
+        // AAAAAAand this is wrong... information is lost because:
+        // when application/test.html is called,
+        // all would be deleted but test.html might still be needed...
+        // the correct way would be to erase the called endpoint from this string.
+        $this->getrequest[$config['httpgetparametername']] = "/".explode("/", $this->getrequest[$config['httpgetparametername']], 3)[2];
+
         unset($config);
     }
 
