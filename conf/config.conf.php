@@ -46,7 +46,7 @@ return [
     ],
     /*
      * Possible Flags within the Flags-Array of a Transportcapsule
-     * The Falgs define the POLICY of a Gateway.
+     * The Flags define the POLICY of a Gateway.
      * They are configured in the endpoint configuration.
      */
     'transporflags' => [ 
