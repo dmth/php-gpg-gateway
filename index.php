@@ -54,7 +54,7 @@ if (!is_array($calledEndpoint)) {
          * S E R V I C E  - Gateway
          * ToDo: encapsulate this code into a function or similar. 
          */
-        $silo = new httpinputsilo($config); //retrieve http-input         
+        $silo = new httpinputsilo($config, $calledEndpoint['endpoint.url']); //retrieve http-input         
         $gw = new servicegateway($silo, $calledEndpoint, $config['httpgetparametername']);  //create a new gateway with access to the HTTP Parametersand configure it.
 
         $encodedquery = $gw->startGW()['post']; //We are only interested in the values which were posted to this gateway
@@ -172,8 +172,7 @@ if (!is_array($calledEndpoint)) {
          * A P P L I C A T I O N  - Gateway
          * ToDo: encapsulate this code into a function or similar. 
          */
-
-        $silo = new httpinputsilo($config);
+        $silo = new httpinputsilo($config, $calledEndpoint['endpoint.url']);
         $gw = new applicationgateway($silo, $calledEndpoint, $config['httpgetparametername']); //create a new gateway with access to the HTTP Parameters and configure it
 
         $request = $gw->startGW();
@@ -323,10 +322,10 @@ if (!is_array($calledEndpoint)) {
  * checks if the enpoint $invokedendpoint is present in the configuration
  */
 function get_endpoint_config(array $endpointsconfig, $invokedendpoint) {
-    //Split the invoked Enpoint into 3 parts.
+    //Split the invoked Enpoint into parts.
     // i.e. /application/test.html => "","application",test.html"
-    $ep = explode("/",$invokedendpoint,3);
-
+    $ep = explode("/",$invokedendpoint);
+    
     //test if the invoked endpoint matches the config.
     foreach ($endpointsconfig as $value) {
        //with preceeding /

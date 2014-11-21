@@ -37,9 +37,11 @@ class httpinputsilo {
     private $postrequest; //The data which was transmitted as HTTP Post to the Service
     private $headers; //The Headers which have been transmitted to the Service
     private $config;
+    private $endpointurl;
     
-   function __construct($config) {
+   function __construct($config, $endpointurl) {
        $this->config = $config;
+       $this->endpointurl = $endpointurl;
        $this->retrieveRequest();
    }
     
@@ -63,17 +65,19 @@ class httpinputsilo {
         $this->getrequest = filter_input_array(INPUT_GET);
         $this->postrequest = filter_input_array(INPUT_POST);
         $this->headers = getallheaders();
-
+        
         //sanitize the arrays, as the endpoint which was called might still be stored in it.
         //this is necessary as http://myurl/service was parsed to http://myurl/?endpoint=service
         //we don't want this information in our GET array.
+        //
         //unset($this->getrequest[$config['httpgetparametername']]);
         // AAAAAAand this is wrong... information is lost because:
         // when application/test.html is called,
         // all would be deleted but test.html might still be needed...
         // the correct way would be to erase the called endpoint from this string.
-        $this->getrequest[$config['httpgetparametername']] = "/".explode("/", $this->getrequest[$config['httpgetparametername']], 3)[2];
-
+        // remove the endpoint from the string.
+        $s = preg_replace('/'.preg_quote($this->endpointurl, '/').'/', '', $this->getrequest[$config['httpgetparametername']], 1);
+        $this->getrequest[$config['httpgetparametername']] = $s;
         unset($config);
     }
 
