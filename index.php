@@ -316,10 +316,19 @@ if (!is_array($calledEndpoint)) {
  * get_endpoint_config
  * checks if the enpoint $invokedendpoint is present in the configuration
  */
-
 function get_endpoint_config(array $endpointsconfig, $invokedendpoint) {
+    //Split the invoked Enpoint into 3 parts.
+    // i.e. /application/test.html => "","application",test.html"
+    $ep = explode("/",$invokedendpoint,3);
+
+    //test if the invoked endpoint matches the config.
     foreach ($endpointsconfig as $value) {
-        if (strcmp($value['endpoint.url'], $invokedendpoint) == 0) {
+       //with preceeding /
+        if (strcmp($value['endpoint.url'], "/".$ep[1]) == 0) {
+            return $value;
+        }
+        //without preceeding /
+        if (strcmp($value['endpoint.url'], $ep[1]) == 0) {
             return $value;
         }
     }
