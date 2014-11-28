@@ -42,7 +42,8 @@ return [
      */
     'allowedendpointroles' => [
         'ser' => 'service',
-        'app' => 'application'
+        'app' => 'application',
+        'deb' => 'debug'
     ],
     /*
      * Possible Flags within the Flags-Array of a Transportcapsule

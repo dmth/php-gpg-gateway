@@ -253,21 +253,28 @@ if (!is_array($calledEndpoint)) {
                 //Decrypt
                 $responsearray = $gw->decode($gpg->decrypt($responsecontent));
                 //Add a header which stets that transport was 
+                /*
                 $responsearray['headers']['X-PGP-EncryptedResponse'] = "TRUE";
+                */
+                 
             } else {
                 $responsearray = $gw->decode($responsecontent);
+                /*
                 $responsearray['headers']['X-PGP-EncryptedResponse'] = "FALSE";
+                */
             }
 
             // lets test if the data was signed by a trusted signature form the config file:
             foreach ($verify as $signatureobject) {
                 //ToDo: This might be a feature to inform the client wheter the Communication was successfull and secure.
-                if (in_array($signatureobject->getKeyFingerprint(), $calledEndpoint['pgp.accepted.keys']) && ($signatureobject->isValid() == TRUE)) {
+               /* if (in_array($signatureobject->getKeyFingerprint(), $calledEndpoint['pgp.accepted.keys']) && ($signatureobject->isValid() == TRUE)) {
                     //Modify HTTP-Headers to include this Trustinformation
                     $responsearray['headers']['X-PGP-SignatureOf'] = $signatureobject->getKeyFingerprint();
                     $responsearray['headers']['X-PGP-SignatureDate'] = $signatureobject->getCreationDate();
                     $responsearray['headers']['X-PGP-SignatureValid'] = $signatureobject->isValid();
                 }
+               */
+                
             }
         } else {
             // The Signature of the Request was invalid!
@@ -308,6 +315,16 @@ if (!is_array($calledEndpoint)) {
             $rH->inReplyTo($md5hashOfRespTC); //Reply to a Mail...
             $rH->sendReceptionReceipt($calledEndpoint, $gpg, $md5hashOfRespTC);
         }
+    } else if (strcasecmp($calledEndpoint['endpoint.role'], $config['allowedendpointroles']['deb']) == 0){
+        /*
+         * DEBUG Service-Application
+         */
+        echo "GET\n";
+        print_r($_GET);
+        echo "POST\n";
+        print_r($_POST);
+        echo "SERVER\n";
+        print_r($_SERVER);
     } else {
         //ToDo throw 50x or similar valid exception
         echo "ERROR: The endpoint " . $calledEndpoint['endpoint.url'] . " is misconfigured.\n The configured role " . $calledEndpoint['endpoint.role'] . " is unknown.";

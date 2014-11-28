@@ -63,7 +63,8 @@ class httpinputsilo {
 
         $config = $this->config;
         $this->getrequest = filter_input_array(INPUT_GET);
-        $this->postrequest = filter_input_array(INPUT_POST);
+        //Values can be posted in two ways. First as a form -> $_POST knows the data, second as text/xml in http request body -> $_POST does not know the data.
+        $this->postrequest = (!empty($_POST)) ? filter_input_array(INPUT_POST) : (empty($GLOBALS["HTTP_RAW_POST_DATA"])? array() : $GLOBALS["HTTP_RAW_POST_DATA"]);
         $this->headers = getallheaders();
         
         //sanitize the arrays, as the endpoint which was called might still be stored in it.

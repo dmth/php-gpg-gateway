@@ -42,7 +42,7 @@ class servicegateway extends gateway{
         $header = $query['headers'];
         $get    = $query['get'];
         $post   = $query['post'];
-        
+
         $serviceurl = $this->endpointconfig['endpoint.service.connecturl'];
         
         $get_r = "";
@@ -65,11 +65,10 @@ class servicegateway extends gateway{
         
         $url = $serviceurl.$serviceUrlAddon."?".$get_r;
         //ToDo Post
-        if ($post == ""){
+        if (empty($post)){
             $response = \Httpful\Request::get($url)->send();
         }else{
-            //ToDo
-            $response = \Httpful\Request::post($url,$post,'application/x-www-form-urlencoded')->send();
+            $response = \Httpful\Request::post($url,$post,$header['Content-Type'])->send();
         }
         return $response;
     }
